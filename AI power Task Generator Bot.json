@@ -1,0 +1,263 @@
+{
+  "name": "AI power Task Generator Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -416,
+        0
+      ],
+      "id": "d6064327-9917-463e-a191-84100a1e975c",
+      "name": "Telegram Trigger",
+      "webhookId": "a1c5eb30-e2ed-4769-b1bf-41cdd7a1ffc2",
+      "credentials": {
+        "telegramApi": {
+          "id": "62S8dyEOzbMZNhoV",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are a helpYou are an AI Learning Roadmap Assistant.\n\nYour job is to understand the user's learning goal and create a practical, structured study roadmap.\n\nThe user may ask things like:\n\n* \"I want to learn Python in two months\"\n* \"I want to learn JavaScript in 30 days\"\n* \"Make me a React roadmap\"\n* \"I have 3 months to learn MERN\"\n* \"What should I learn after JavaScript?\"\n\nFor every request, identify:\n\n1. Technology or skill the user wants to learn.\n2. Available learning duration.\n3. User's likely goal, if mentioned.\n4. Important topics that should be learned in the correct order.\n\nCreate a roadmap that is realistic for the given duration.\n\nAlways organize the response using these sections:\n\n## Learning Goal\n\nClearly state what the user wants to learn and the available time.\n\n## Roadmap\n\nCreate a table with these columns:\n\n| Week | Topics | What to Learn | Practice / Project |\n| ---- | ------ | ------------- | ------------------ |\n\nKeep the topics in logical order, starting from fundamentals and gradually moving to advanced concepts.\n\nFor example, for Python:\nWeek 1 → Python basics\nWeek 2 → Conditions, loops, functions\nWeek 3 → Lists, tuples, dictionaries, sets\nWeek 4 → OOP, modules and exceptions\nWeek 5 → File handling and useful libraries\nWeek 6 → APIs, JSON and databases\nWeek 7 → Projects\nWeek 8 → Final project and revision\n\n## Daily Study Plan\n\nGive a simple daily routine such as:\n\n| Activity        |   Time |\n| --------------- | -----: |\n| Learn concepts  | 1 hour |\n| Coding practice | 1 hour |\n| Project work    | 1 hour |\n\nAdjust the time according to the user's available duration if they provide it.\n\n## Projects\n\nSuggest projects that match the user's current learning level.\n\nStart with small projects and gradually increase difficulty.\n\n## Final Outcome\n\nExplain what the user should be able to build or understand after completing the roadmap.\n\n## Important Rules\n\n* Keep the roadmap practical and beginner-friendly.\n* Do not overload the user with too many topics.\n* Prioritize coding practice over theory.\n* Include projects wherever possible.\n* Follow the requested duration strictly.\n* If the user does not specify a duration, suggest a reasonable duration.\n* If the user does not specify their skill level, assume they are a beginner.\n* Use clear tables and headings.\n* Keep explanations concise but useful.\n* Do not invent personal information about the user.\n* If the user asks a question unrelated to learning, answer it normally instead of creating a roadmap.\n\nYour final response should be easy to read inside Telegram and should not contain unnecessary technical explanations about how you generated the roadmap.\nful assistant"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -208,
+        0
+      ],
+      "id": "e61e3ee0-de76-4bcb-9158-6b5118e3df02",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        192
+      ],
+      "id": "cb97890e-acec-4a52-819b-b6fc70e727b7",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "dZ73OCy2ZY2q4tZK",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $json.output || \"\";\n\n// Extract the markdown table from AI Agent output\nconst lines = output.split(\"\\n\");\n\nconst tableLines = lines.filter(line => line.includes(\"|\"));\n\nif (tableLines.length < 2) {\n  return [\n    {\n      json: {\n        error: \"No table found in AI Agent output\",\n        originalOutput: output\n      }\n    }\n  ];\n}\n\n// Remove header separator row\nconst dataLines = tableLines.filter(\n  line => !line.match(/^\\s*\\|?\\s*:?-+:?\\s*\\|/)\n);\n\n// Get table header\nconst headers = dataLines[0]\n  .split(\"|\")\n  .map(item => item.trim())\n  .filter(item => item !== \"\");\n\n// Convert table rows into objects\nconst tableData = [];\n\nfor (let i = 1; i < dataLines.length; i++) {\n\n  const values = dataLines[i]\n    .split(\"|\")\n    .map(item => item.trim())\n    .filter(item => item !== \"\");\n\n  if (values.length === headers.length) {\n\n    const row = {};\n\n    headers.forEach((header, index) => {\n      row[header] = values[index];\n    });\n\n    tableData.push(row);\n  }\n}\n\n// Return each week as a separate n8n item\nreturn tableData.map(row => ({\n  json: row\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        0
+      ],
+      "id": "1dc8da2d-abaa-4905-b68d-38f51ff833fb",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1K60crSryFhbI6oU8w5QFfpt5FzIsFGXP8Xg-s3lACOg",
+          "mode": "list",
+          "cachedResultName": "AI Power Task Generator Bot",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1K60crSryFhbI6oU8w5QFfpt5FzIsFGXP8Xg-s3lACOg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1K60crSryFhbI6oU8w5QFfpt5FzIsFGXP8Xg-s3lACOg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Week": "={{ $json.Week }}",
+            "Topics": "={{ $json.Topics }}",
+            "What to Learn": "={{ $json['What to Learn'] }}",
+            "Practice / Project": "={{ $json['Practice / Project'] }}"
+          },
+          "matchingColumns": [
+            "Week"
+          ],
+          "schema": [
+            {
+              "id": "Week",
+              "displayName": "Week",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Topics",
+              "displayName": "Topics",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "What to Learn",
+              "displayName": "What to Learn",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Practice / Project",
+              "displayName": "Practice / Project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        304,
+        0
+      ],
+      "id": "97d4f347-daba-45a2-8350-80f969eda8bb",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qLMv6Ftpg13j402T",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=📚 Python Roadmap - 2 Months\n\n🎯 Goal: Learn Python\n⏱️ Duration: 8 Weeks\n\n📅 Week 1\nTopics: {{ $input.all()[0].json[\"Topics\"] }}\nLearn: {{ $input.all()[0].json[\"What to Learn\"] }}\nProject: {{ $input.all()[0].json[\"Practice / Project\"] }}\n\n📅 Week 2\nTopics: {{ $input.all()[1].json[\"Topics\"] }}\nLearn: {{ $input.all()[1].json[\"What to Learn\"] }}\nProject: {{ $input.all()[1].json[\"Practice / Project\"] }}\n\n📅 Week 3\nTopics: {{ $input.all()[2].json[\"Topics\"] }}\nLearn: {{ $input.all()[2].json[\"What to Learn\"] }}\nProject: {{ $input.all()[2].json[\"Practice / Project\"] }}\n\n📅 Week 4\nTopics: {{ $input.all()[3].json[\"Topics\"] }}\nLearn: {{ $input.all()[3].json[\"What to Learn\"] }}\nProject: {{ $input.all()[3].json[\"Practice / Project\"] }}\n\n📅 Week 5\nTopics: {{ $input.all()[4].json[\"Topics\"] }}\nLearn: {{ $input.all()[4].json[\"What to Learn\"] }}\nProject: {{ $input.all()[4].json[\"Practice / Project\"] }}\n\n📅 Week 6\nTopics: {{ $input.all()[5].json[\"Topics\"] }}\nLearn: {{ $input.all()[5].json[\"What to Learn\"] }}\nProject: {{ $input.all()[5].json[\"Practice / Project\"] }}\n\n📅 Week 7\nTopics: {{ $input.all()[6].json[\"Topics\"] }}\nLearn: {{ $input.all()[6].json[\"What to Learn\"] }}\nProject: {{ $input.all()[6].json[\"Practice / Project\"] }}\n\n📅 Week 8\nTopics: {{ $input.all()[7].json[\"Topics\"] }}\nLearn: {{ $input.all()[7].json[\"What to Learn\"] }}\nProject: {{ $input.all()[7].json[\"Practice / Project\"] }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "1e96325d-a044-417c-9b03-2f055c81e8d5",
+      "name": "Send a text message",
+      "webhookId": "2df32285-c442-46e5-a1b5-6f1931e960d1",
+      "credentials": {
+        "telegramApi": {
+          "id": "62S8dyEOzbMZNhoV",
+          "name": "Telegram account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "274c708a-650a-4d53-87cb-747d1b894bb9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cf757b7c29b658dca772146001652c8ab738abc89921fd9aa700eaac07e7e2ec"
+  },
+  "nodeGroups": [],
+  "id": "Tjsxi1rWJu98iyZd",
+  "tags": []
+}
